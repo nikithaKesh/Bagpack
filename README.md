@@ -284,3 +284,8 @@ Important: the 642 seeded URL records are not inserted into Supabase until an au
 - Image saving waits for IndexedDB write completion, and load-hydration is guarded against early saves.
 - Service worker is version-bumped, uses network-first app files, and app/CSS URLs are cache-busted.
 - Profile/account cover photos are local to this browser; Supabase Storage is not configured.
+
+## V4.1 glass fade overlay + image preview persistence
+- Account cards keep a persistent glass-fade overlay even when a custom uploaded image is used.
+- Edit/Add image previews now render with a real image element for more reliable immediate preview.
+- Edit saves keep the selected image in memory until IndexedDB confirms the write.

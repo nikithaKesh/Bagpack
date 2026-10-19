@@ -681,7 +681,14 @@ async function readImageFile(file){
 }
 function setProfilePreview(el,url){
  if(!el)return;
- el.style.backgroundImage=url?`url(${JSON.stringify(url)})`:'';
+ let img=el.querySelector('img.preview-thumb');
+ if(url){
+   if(!img){img=document.createElement('img');img.className='preview-thumb';img.alt='Selected image preview';el.prepend(img)}
+   img.src=url;
+   img.hidden=false;
+ }else if(img){
+   img.remove();
+ }
  el.classList.toggle('has-image',!!url);
  el.setAttribute('aria-label',url?'Selected image preview':'No image selected');
 }
@@ -692,23 +699,28 @@ async function updateProfileFile(inputId,previewId){
  const old=pendingImageUploads.get(inputId);if(old?.objectUrl)URL.revokeObjectURL(old.objectUrl);
  const state={objectUrl:URL.createObjectURL(file),promise:null,dataUrl:'',error:null};
  pendingImageUploads.set(inputId,state);
+ input.dataset.image='';
  setProfilePreview(preview,state.objectUrl); // Immediate preview, even during compression.
  state.promise=readImageFile(file).then(result=>{
    state.dataUrl=result;
-   if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,result);URL.revokeObjectURL(state.objectUrl);state.objectUrl=null;}
+   input.dataset.image=result;
+   if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,result);if(state.objectUrl){URL.revokeObjectURL(state.objectUrl);state.objectUrl=null;}}
    return result;
- }).catch(err=>{state.error=err;if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,'');input.value='';notify(err.message,'error','Image upload')}throw err});
+ }).catch(err=>{state.error=err;if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,'');input.value='';input.dataset.image='';notify(err.message,'error','Image upload')}throw err});
 }
 async function selectedImage(inputId){
+ const input=$('#'+inputId);
  const state=pendingImageUploads.get(inputId);
- if(!state)return '';
+ if(!state)return input?.dataset?.image||'';
  if(state.error)throw state.error;
- return await state.promise;
+ const result=await state.promise;
+ if(input)input.dataset.image=result||input.dataset.image||'';
+ return result;
 }
 function clearSelectedImage(inputId){
  const state=pendingImageUploads.get(inputId);if(state?.objectUrl)URL.revokeObjectURL(state.objectUrl);
  pendingImageUploads.delete(inputId);
- const el=$('#'+inputId);if(el)el.value='';
+ const el=$('#'+inputId);if(el){el.value='';el.dataset.image='';}
 }
 $('#accountProfileImage')?.addEventListener('change',()=>updateProfileFile('accountProfileImage','accountProfilePreview'));
 $('#editProfileImage')?.addEventListener('change',()=>updateProfileFile('editProfileImage','editProfilePreview'));
@@ -735,7 +747,7 @@ document.addEventListener('click',e=>{
    $('#detailEditButton').dataset.id=i.id;openDialog($('#detailsDialog'));return;
  }
  const m=e.target.closest('.manage'); if(m){const i=items.find(x=>x.id===m.dataset.id);if(!i)return;$('#editItemId').value=i.id;$('#editTitle').value=i.title||'';$('#editUrl').value=i.url||'';$('#editType').value=i.type||'resource';$('#editCategory').value=i.category||'Imported';$('#editSubcategory').value=i.subcategory||'';$('#editTheme').value=i.theme||'';$('#editStatus').value=i.status||'active';$('#editCoverUrl').value=/^https?:\/\//i.test(i.coverUrl||'')?i.coverUrl:'';$('#editTags').value=(i.tags||[]).join(', ');$('#editNote').value=i.note||'';$('#editPinned').checked=!!i.pinned;
- const editFile=$('#editProfileImage');if(editFile)clearSelectedImage('editProfileImage');setProfilePreview($('#editProfilePreview'),i.coverUrl||'');
+ const editFile=$('#editProfileImage');if(editFile){clearSelectedImage('editProfileImage');editFile.dataset.image=i.coverUrl||'';}setProfilePreview($('#editProfilePreview'),i.coverUrl||'');
  const ec=$('#editCollections');[...ec.options].forEach(o=>o.selected=collections.some(c=>c.id===o.value&&(c.itemIds||[]).includes(i.id)));
  openDialog($('#itemDialog'));return}
  const del=e.target.closest('[data-delete-selected]');if(del){const group=duplicateMap()[Number(del.dataset.deleteSelected)];if(!group)return;const selected=group[1].filter(i=>$(`[data-dup-select="${CSS.escape(i.id)}"]`)?.checked);if(!selected.length)return toast('Select at least one duplicate copy.');if(selected.length>=group[1].length)return toast('Keep at least one copy in the group.');if(confirm(`Remove ${selected.length} selected record${selected.length>1?'s':''}? This only changes your local site data; the source text file remains untouched.`)){const ids=new Set(selected.map(x=>x.id));items=items.filter(i=>!ids.has(i.id));collections.forEach(c=>c.itemIds=(c.itemIds||[]).filter(id=>!ids.has(id)));save();Promise.all([...ids].map(cloudDeleteResource));renderAll();notify('Selected duplicate copies removed','warning')}return}
@@ -938,13 +950,16 @@ $('#collectionForm').addEventListener('submit',e=>{
  save();e.target.reset();closeDialogs();renderAll();notify('Collection created','success');
 });
 
-$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile='';try{uploadedProfile=await selectedImage('editProfileImage')}catch(err){return notify(err.message,'error','Image error')}
- 
+$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;
+ const saveBtn=$('#saveItemBtn'); const originalSaveLabel=saveBtn?saveBtn.textContent:''; if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Saving changes…';}
+ let uploadedProfile='';try{uploadedProfile=await selectedImage('editProfileImage')}catch(err){if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=originalSaveLabel;}return notify(err.message,'error','Image error')}
  const coverText=$('#editCoverUrl').value.trim();
  i.coverUrl=uploadedProfile||coverText||i.coverUrl||'';i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
  const selected=new Set([...$('#editCollections').selectedOptions].map(o=>o.value));
  collections.forEach(c=>{c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id);if(selected.has(c.id))c.itemIds.push(i.id)});
- try{await save()}catch(err){Object.assign(i,previous);return notify('Could not save image: '+err.message,'error','Storage failed')}closeDialogs();renderAll();notify('Changes saved','success');});
+ try{await save(); clearSelectedImage('editProfileImage');}
+ catch(err){Object.assign(i,previous);if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=originalSaveLabel;}return notify('Could not save image: '+err.message,'error','Storage failed')}
+ if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=originalSaveLabel;}closeDialogs();renderAll();notify('Changes saved','success');});
 $('#deleteItemBtn').addEventListener('click',async()=>{const i=items.find(x=>x.id===$('#editItemId').value);if(i&&confirm(`Delete "${i.title}" from Bagpack? This removes the local copy and, when signed in, the cloud copy too.`)){items=items.filter(x=>x.id!==i.id);collections.forEach(c=>c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id));save();await cloudDeleteResource(i.id);closeDialogs();renderAll();notify('Record deleted','warning')}});
 
 
