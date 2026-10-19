@@ -260,3 +260,95 @@ dialog{color:var(--text)}dialog::backdrop{background:rgba(0,0,0,.66);backdrop-fi
 .account-card .follow-cta{background:rgba(248,248,249,.92)!important;box-shadow:0 10px 22px rgba(0,0,0,.22)!important}
 #itemDialog .profile-upload-row{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
 #itemDialog .profile-upload-preview{background-color:rgba(255,255,255,.02)}
+
+
+/* V4.2 scrollbar styling */
+:root{
+  --scroll-track: rgba(255,255,255,.035);
+  --scroll-thumb: linear-gradient(180deg, rgba(58,74,112,.88), rgba(29,40,67,.96));
+  --scroll-thumb-border: rgba(255,255,255,.08);
+  --scroll-thumb-hover: linear-gradient(180deg, rgba(76,95,142,.95), rgba(40,56,95,.98));
+}
+html{scrollbar-gutter:stable both-edges;scrollbar-width:thin;scrollbar-color:#304166 rgba(255,255,255,.04)}
+body{
+  scrollbar-width:thin;
+  scrollbar-color:#304166 rgba(255,255,255,.04);
+}
+/* Global app scrollbars */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{
+  background:var(--scroll-track);
+  border-radius:999px;
+}
+*::-webkit-scrollbar-thumb{
+  background:var(--scroll-thumb);
+  border-radius:999px;
+  border:2px solid rgba(11,12,16,.82);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 4px 14px rgba(0,0,0,.24);
+}
+*::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover)}
+*::-webkit-scrollbar-corner{background:transparent}
+
+/* More premium inner-panel scroll areas */
+.sidebar,
+.view,
+.dialog,
+.modal-card,
+.panel,
+#recordDetailsBody,
+#duplicateGroups,
+#libraryGrid,
+#accountGrid,
+#notesList,
+textarea,
+select,
+.note-list,
+.duplicate-groups,
+.profile-upload-copy,
+#editCollections,
+#bulkPreview,
+#bulkRows,
+#notesEditor,
+#noteEditor,
+#collectionGrid,
+#categoryGrid{
+  scrollbar-width:thin;
+  scrollbar-color:#334974 rgba(255,255,255,.03);
+}
+.sidebar::-webkit-scrollbar,
+.dialog::-webkit-scrollbar,
+.modal-card::-webkit-scrollbar,
+.view::-webkit-scrollbar,
+#duplicateGroups::-webkit-scrollbar,
+#recordDetailsBody::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+#editCollections::-webkit-scrollbar{width:8px;height:8px}
+.sidebar::-webkit-scrollbar-thumb,
+.dialog::-webkit-scrollbar-thumb,
+.modal-card::-webkit-scrollbar-thumb,
+.view::-webkit-scrollbar-thumb,
+#duplicateGroups::-webkit-scrollbar-thumb,
+#recordDetailsBody::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb,
+#editCollections::-webkit-scrollbar-thumb{
+  border:1px solid rgba(11,12,16,.72);
+  background:linear-gradient(180deg, rgba(74,95,144,.92), rgba(35,50,83,.98));
+}
+
+/* Hide noisy horizontal scrollbars where possible but keep scrolling */
+.card-grid,
+.account-grid,
+.category-grid,
+.collection-grid,
+.duplicate-grid,
+.home-category-list,
+.home-attention{
+  overflow-x:clip;
+}
+
+/* Optional invisible-but-scrollable utility for places already using wheel/trackpad */
+.scrollbar-ghost{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.scrollbar-ghost::-webkit-scrollbar{width:0;height:0}

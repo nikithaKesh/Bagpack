@@ -289,3 +289,8 @@ Important: the 642 seeded URL records are not inserted into Supabase until an au
 - Account cards keep a persistent glass-fade overlay even when a custom uploaded image is used.
 - Edit/Add image previews now render with a real image element for more reliable immediate preview.
 - Edit saves keep the selected image in memory until IndexedDB confirms the write.
+
+## V4.2 scrollbar styling
+- Replaced the default browser scrollbar with a thinner dark glass-style scrollbar that matches Bagpack.
+- Preserved scrolling while reducing visual noise in dialogs, sidebars, and inner panels.
+- Added a utility class for invisible-but-scrollable areas when needed.
