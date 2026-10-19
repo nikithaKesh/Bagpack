@@ -270,3 +270,10 @@ Important: the 642 seeded URL records are not inserted into Supabase until an au
 - Uploaded photos are resized to a maximum of 1000px and JPEG compressed to reduce storage failures.
 - IndexedDB remains the full local storage source; localStorage gracefully omits embedded photos if its quota is exceeded.
 - URL-based covers are still supported.
+
+## Image persistence repair
+- Await IndexedDB writes before reporting successful profile image changes.
+- Keep large embedded images out of localStorage; cache is lightweight and quota failure never blocks IndexedDB.
+- Hydrate from IndexedDB without copying image data back to localStorage.
+- Preserve locally uploaded pictures when pulling cloud records.
+- Avoid syncing base64 images as huge Supabase text values. Uploaded images are local to this browser until dedicated cloud storage is configured.

@@ -40,19 +40,24 @@ function notify(message,type='info',title=''){
  setTimeout(remove,type==='error'?6500:4200);
 }
 const toast=(m)=>notify(m,'success');
-function save(){
- try{localStorage.setItem(LS_ITEMS,JSON.stringify(items))}
- catch(err){
-  // Large uploaded images can exceed localStorage's quota; IndexedDB retains the full payload.
-  localStorage.setItem(LS_ITEMS,JSON.stringify(items.map(i=>({...i,coverUrl:i.coverUrl?.startsWith('data:image/')?'':i.coverUrl}))));
-  notify('Photo saved to browser database (IndexedDB). Local backup cache omits embedded photos.','info','Photo storage');
+// Keep large image bytes only in IndexedDB; localStorage is a small fallback cache.
+function cacheLightweightState(){
+ const lightweight=items.map(i=>({...i,coverUrl:/^data:image\//i.test(i.coverUrl||'')?'':i.coverUrl}));
+ try{localStorage.setItem(LS_ITEMS,JSON.stringify(lightweight))}catch(err){
+   // A full browser storage area must never block IndexedDB writes.
+   try{localStorage.removeItem(LS_ITEMS)}catch{}
  }
- localStorage.setItem(LS_CATS,JSON.stringify(categories));
- localStorage.setItem(LS_COLLECTIONS,JSON.stringify(collections));
- localStorage.setItem(LS_NOTES,JSON.stringify(notes));
- dbPut('items',items);dbPut('categories',categories);dbPut('collections',collections);dbPut('notes',notes);
- scheduleCloudSync();
+ for(const [key,value] of [[LS_CATS,categories],[LS_COLLECTIONS,collections],[LS_NOTES,notes]]){
+   try{localStorage.setItem(key,JSON.stringify(value))}catch{}
+ }
 }
+function save(){
+ cacheLightweightState();
+ const writes=Promise.all([dbPut('items',items),dbPut('categories',categories),dbPut('collections',collections),dbPut('notes',notes)]);
+ scheduleCloudSync();
+ return writes;
+}
+
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function canon(raw){
   try{
@@ -249,7 +254,7 @@ function openDatabase(){
 }
 async function dbPut(key,value){
  try{const db=await openDatabase();if(!db)return;await new Promise((res,rej)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(value,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)});const s=$('#dbStatus');if(s)s.textContent='IndexedDB · saved';}
- catch(e){const s=$('#dbStatus');if(s)s.textContent='Storage fallback';}
+ catch(e){const s=$('#dbStatus');if(s)s.textContent='Storage failed';throw e;}
 }
 async function dbGet(key){
  try{const db=await openDatabase();if(!db)return null;return await new Promise((res,rej)=>{const tx=db.transaction(DB_STORE,'readonly');const r=tx.objectStore(DB_STORE).get(key);r.onsuccess=()=>res(r.result??null);r.onerror=()=>rej(r.error)});}catch{return null}
@@ -266,8 +271,7 @@ async function hydrateDatabase(){
    if(Array.isArray(dbCats)&&dbCats.length)categories=dbCats;
    if(Array.isArray(dbCols))collections=dbCols;
    if(Array.isArray(dbNotes))notes=dbNotes;
-   localStorage.setItem(LS_ITEMS,JSON.stringify(items));localStorage.setItem(LS_CATS,JSON.stringify(categories));localStorage.setItem(LS_COLLECTIONS,JSON.stringify(collections));
- localStorage.setItem(LS_NOTES,JSON.stringify(notes));renderAll();
+   cacheLightweightState();renderAll();
  } else {await dbPut('items',items);await dbPut('categories',categories);await dbPut('collections',collections);await dbPut('notes',notes);}
  const s=$('#dbStatus');if(s)s.textContent='IndexedDB · active';
 }
@@ -403,7 +407,7 @@ function renderLibraryPagination(totalPages,totalFiltered){
 function accountCoverMarkup(item){
  const b=brandFor(item);
  const hasPhoto=!!(item.coverUrl && (/^data:image\//.test(item.coverUrl)||/^https?:\/\//.test(item.coverUrl)));
- const photo=hasPhoto?`<img class="account-profile-cover" src="${esc(item.coverUrl)}" alt="" loading="lazy" onerror="this.remove()">`:'';
+ const photo=hasPhoto?`<img class="account-profile-cover" src="${esc(item.coverUrl)}" alt="" loading="lazy" onerror="this.hidden=true">`:'';
  const name=(item.title||b.label||'Account');
  const summaryRaw=(item.note||`Official ${b.label||b.key} profile`).split('·').pop().trim();
  const summary=summaryRaw||`Official ${b.label||b.key} profile`;
@@ -695,7 +699,7 @@ $('#accountForm').addEventListener('submit',async e=>{
  try{profileImage=$('#accountProfileImage').dataset.dataUrl||await readImageFile($('#accountProfileImage').files?.[0]);}
  catch(err){return notify(err.message,'error','Profile image')}
  items.push({id:bagpackUid('account'),title:$('#accountPlatform').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:[ $('#accountHandle').value.trim(), $('#accountRole').value, $('#accountNote').value.trim() ].filter(Boolean).join(' · '),type:'account',category:'Accounts',tags:[$('#accountRole').value],visibility:'private',favorite:false,pinned:false,status:'active',coverUrl:profileImage,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
- try{save()}catch(err){items.pop();return notify('Image could not be stored: '+err.message,'error','Save failed')}e.target.reset();delete $('#accountProfileImage').dataset.dataUrl;setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
+ try{await save()}catch(err){items.pop();return notify('Image could not be stored: '+err.message,'error','Save failed')}e.target.reset();delete $('#accountProfileImage').dataset.dataUrl;setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
 });
 $('#categoryForm').addEventListener('submit',e=>{e.preventDefault();const name=$('#categoryName').value.trim();if(categories.some(c=>c.name.toLowerCase()===name.toLowerCase()))return toast('Category already exists.');categories.push({id:bagpackUid('category'),name,description:$('#categoryDescription').value.trim()});save();e.target.reset();closeDialogs();renderAll();notify('Category created','success');});
 
@@ -913,7 +917,7 @@ $('#collectionForm').addEventListener('submit',e=>{
  save();e.target.reset();closeDialogs();renderAll();notify('Collection created','success');
 });
 
-$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';
+$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';
  if(i.type==='account'&&!uploadedProfile&&$('#editProfileImage')?.files?.[0]){
    try{uploadedProfile=await readImageFile($('#editProfileImage').files[0]);}catch(err){return notify(err.message,'error','Profile image')}
  }
@@ -921,7 +925,7 @@ $('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=it
  i.coverUrl=(i.type==='account'&&uploadedProfile)?uploadedProfile:(coverText||i.coverUrl||'');i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
  const selected=new Set([...$('#editCollections').selectedOptions].map(o=>o.value));
  collections.forEach(c=>{c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id);if(selected.has(c.id))c.itemIds.push(i.id)});
- save();closeDialogs();renderAll();notify('Changes saved','success');});
+ try{await save()}catch(err){Object.assign(i,previous);return notify('Could not save image: '+err.message,'error','Storage failed')}closeDialogs();renderAll();notify('Changes saved','success');});
 $('#deleteItemBtn').addEventListener('click',async()=>{const i=items.find(x=>x.id===$('#editItemId').value);if(i&&confirm(`Delete "${i.title}" from Bagpack? This removes the local copy and, when signed in, the cloud copy too.`)){items=items.filter(x=>x.id!==i.id);collections.forEach(c=>c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id));save();await cloudDeleteResource(i.id);closeDialogs();renderAll();notify('Record deleted','warning')}});
 
 
@@ -1048,7 +1052,7 @@ async function pushAllToSupabase(options={}){
  const resourceRows=resourceSource.map(i=>({
    id:String(i.id),title:i.title||'',url:i.url,canonical_url:canon(i.url),domain:i.domain||domain(i.url),note:i.note||'',
    type:i.type||'resource',category:i.category||'',subcategory:i.subcategory||'',theme:i.theme||'',tags:i.tags||[],
-   visibility:i.visibility||'private',favorite:!!i.favorite,pinned:!!i.pinned,status:i.status||'active',cover_url:i.coverUrl||'',open_count:i.openCount||0,
+   visibility:i.visibility||'private',favorite:!!i.favorite,pinned:!!i.pinned,status:i.status||'active',cover_url:/^data:image\//i.test(i.coverUrl||'')?'':(i.coverUrl||''),open_count:i.openCount||0,
    last_opened_at:i.lastOpenedAt||null,created_at:i.createdAt||new Date().toISOString(),updated_at:i.updatedAt||i.createdAt||new Date().toISOString()
  }));
  const categoryRows=categories.map(c=>({id:String(c.id),name:c.name,description:c.description||''}));
@@ -1078,11 +1082,13 @@ async function pullAllFromSupabase(){
    for(const r of [rr,cr,colr,jr,nr])if(r.error)throw r.error;
    if(rr.data?.length){
    const localVault=items.filter(i=>i.category==='Private Vault');
+   const localPhotos=new Map(items.filter(i=>/^data:image\//i.test(i.coverUrl||'')).map(i=>[String(i.id),i.coverUrl]));
    const cloudItems=rr.data.map(r=>normalizeItemShape({
      id:r.id,title:r.title,url:r.url,canonicalUrl:r.canonical_url,domain:r.domain,note:r.note,type:r.type,category:r.category,
      subcategory:r.subcategory,theme:r.theme,tags:r.tags||[],visibility:r.visibility,favorite:r.favorite,pinned:r.pinned,status:r.status||'active',coverUrl:r.cover_url||'',
      openCount:r.open_count,lastOpenedAt:r.last_opened_at,createdAt:r.created_at,updatedAt:r.updated_at
    }));
+   cloudItems.forEach(i=>{if(localPhotos.has(String(i.id)))i.coverUrl=localPhotos.get(String(i.id));});
    const keepVault=localStorage.getItem(BAGPACK_CONFIG.STORAGE.vaultLocalOnly)!=='0';
    items=keepVault?[...cloudItems.filter(i=>i.category!=='Private Vault'),...localVault]:cloudItems;
    }
@@ -1208,5 +1214,5 @@ const repairedAtStartup=assignMissingCategories(items);const subcategoryRepaired
 renderAll();
 initStatusPickers();
 setupMotion();
-hydrateDatabase();
+hydrateDatabase().catch(err=>notify('Could not load saved images: '+err.message,'error','Storage'));
 })();
