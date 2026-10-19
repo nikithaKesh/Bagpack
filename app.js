@@ -41,7 +41,12 @@ function notify(message,type='info',title=''){
 }
 const toast=(m)=>notify(m,'success');
 function save(){
- localStorage.setItem(LS_ITEMS,JSON.stringify(items));
+ try{localStorage.setItem(LS_ITEMS,JSON.stringify(items))}
+ catch(err){
+  // Large uploaded images can exceed localStorage's quota; IndexedDB retains the full payload.
+  localStorage.setItem(LS_ITEMS,JSON.stringify(items.map(i=>({...i,coverUrl:i.coverUrl?.startsWith('data:image/')?'':i.coverUrl}))));
+  notify('Photo saved to browser database (IndexedDB). Local backup cache omits embedded photos.','info','Photo storage');
+ }
  localStorage.setItem(LS_CATS,JSON.stringify(categories));
  localStorage.setItem(LS_COLLECTIONS,JSON.stringify(collections));
  localStorage.setItem(LS_NOTES,JSON.stringify(notes));
@@ -647,19 +652,42 @@ $('#linkForm').addEventListener('submit',e=>{e.preventDefault();const url=$('#li
  const chosenCollection=$('#linkCollection').value;if(chosenCollection){const c=collections.find(x=>x.id===chosenCollection);if(c&&!c.itemIds.includes(it.id))c.itemIds.push(it.id);}save();e.target.reset();$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Paste a URL to check the library.';$('#suggestionBox').classList.add('hidden');closeDialogs();renderAll();notify('Link added to your library','success','Saved');});
 let accTimer;
 $('#accountUrl').addEventListener('input',e=>{clearTimeout(accTimer);const v=e.target.value.trim();const box=$('#accountCheck'),btn=$('#saveAccountBtn');box.className='check-box idle';box.textContent='Checking…';btn.disabled=true;if(!v){box.textContent='The profile URL will be checked against the full library.';return}accTimer=setTimeout(()=>{const ex=items.filter(i=>canon(i.url)===canon(v));if(ex.length){box.className='check-box bad';box.textContent=`Already exists as ${ex[0].type} · ${ex[0].title}.`;btn.disabled=true}else{box.className='check-box good';box.textContent=`Unique profile URL confirmed against ${items.length} records.`;btn.disabled=false}},180)});
-function readImageFile(file){
- return new Promise((resolve,reject)=>{
-  if(!file)return resolve('');
-  if(!file.type.startsWith('image/'))return reject(new Error('Please choose an image file.'));
-  const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(new Error('Could not read that image.'));r.readAsDataURL(file);
- });
+async function readImageFile(file){
+ if(!file)return '';
+ if(!file.type.startsWith('image/'))throw new Error('Please choose an image file.');
+ if(file.size>18*1024*1024)throw new Error('Image exceeds 18 MB. Please choose a smaller file.');
+ // Compress images before writing to the local library to avoid browser storage quota errors.
+ const blobUrl=URL.createObjectURL(file);
+ try{
+  const img=await new Promise((resolve,reject)=>{
+   const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Image could not be decoded.'));image.src=blobUrl;
+  });
+  const scale=Math.min(1,1000/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image processing is unavailable in this browser.');
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',0.78);
+ }finally{URL.revokeObjectURL(blobUrl)}
 }
 function setProfilePreview(el,dataUrl){
  if(!el)return;
- el.style.backgroundImage=dataUrl?`url(${JSON.stringify(dataUrl)})`:'';
+ // Use a CSS custom property instead of an unsafely interpolated CSS url().
+ el.style.backgroundImage=dataUrl?`url("${String(dataUrl).replace(/"/g,'%22')}")`:'';
  el.classList.toggle('has-image',!!dataUrl);
 }
-
+async function updateProfileFile(inputId,previewId){
+ const input=$('#'+inputId),preview=$('#'+previewId);if(!input)return;
+ const file=input.files?.[0];if(!file)return;
+ input.dataset.dataUrl='';
+ try{
+  const result=await readImageFile(file);
+  input.dataset.dataUrl=result;
+  setProfilePreview(preview,result);
+  notify('Image ready. Save the record to apply it.','info','Profile photo');
+ }catch(err){input.value='';delete input.dataset.dataUrl;notify(err.message,'error','Profile photo')}
+}
+$('#accountProfileImage')?.addEventListener('change',()=>updateProfileFile('accountProfileImage','accountProfilePreview'));
+$('#editProfileImage')?.addEventListener('change',()=>updateProfileFile('editProfileImage','editProfilePreview'));
 $('#accountForm').addEventListener('submit',async e=>{
  e.preventDefault();const url=$('#accountUrl').value.trim();
  if(items.some(i=>canon(i.url)===canon(url)))return notify('This URL already exists.','warning');
@@ -667,7 +695,7 @@ $('#accountForm').addEventListener('submit',async e=>{
  try{profileImage=$('#accountProfileImage').dataset.dataUrl||await readImageFile($('#accountProfileImage').files?.[0]);}
  catch(err){return notify(err.message,'error','Profile image')}
  items.push({id:bagpackUid('account'),title:$('#accountPlatform').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:[ $('#accountHandle').value.trim(), $('#accountRole').value, $('#accountNote').value.trim() ].filter(Boolean).join(' · '),type:'account',category:'Accounts',tags:[$('#accountRole').value],visibility:'private',favorite:false,pinned:false,status:'active',coverUrl:profileImage,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
- save();e.target.reset();delete $('#accountProfileImage').dataset.dataUrl;setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
+ try{save()}catch(err){items.pop();return notify('Image could not be stored: '+err.message,'error','Save failed')}e.target.reset();delete $('#accountProfileImage').dataset.dataUrl;setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
 });
 $('#categoryForm').addEventListener('submit',e=>{e.preventDefault();const name=$('#categoryName').value.trim();if(categories.some(c=>c.name.toLowerCase()===name.toLowerCase()))return toast('Category already exists.');categories.push({id:bagpackUid('category'),name,description:$('#categoryDescription').value.trim()});save();e.target.reset();closeDialogs();renderAll();notify('Category created','success');});
 
@@ -681,7 +709,8 @@ document.addEventListener('click',e=>{
    $('#recordDetailsBody').innerHTML=fields.filter(([k,v])=>v).map(([k,v])=>`<div class="record-detail-row"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('');
    $('#detailEditButton').dataset.id=i.id;openDialog($('#detailsDialog'));return;
  }
- const m=e.target.closest('.manage'); if(m){const i=items.find(x=>x.id===m.dataset.id);if(!i)return;$('#editItemId').value=i.id;$('#editTitle').value=i.title||'';$('#editUrl').value=i.url||'';$('#editType').value=i.type||'resource';$('#editCategory').value=i.category||'Imported';$('#editSubcategory').value=i.subcategory||'';$('#editTheme').value=i.theme||'';$('#editStatus').value=i.status||'active';$('#editCoverUrl').value=i.coverUrl||'';$('#editTags').value=(i.tags||[]).join(', ');$('#editNote').value=i.note||'';$('#editPinned').checked=!!i.pinned;
+ const m=e.target.closest('.manage'); if(m){const i=items.find(x=>x.id===m.dataset.id);if(!i)return;$('#editItemId').value=i.id;$('#editTitle').value=i.title||'';$('#editUrl').value=i.url||'';$('#editType').value=i.type||'resource';$('#editCategory').value=i.category||'Imported';$('#editSubcategory').value=i.subcategory||'';$('#editTheme').value=i.theme||'';$('#editStatus').value=i.status||'active';$('#editCoverUrl').value=/^https?:\/\//i.test(i.coverUrl||'')?i.coverUrl:'';$('#editTags').value=(i.tags||[]).join(', ');$('#editNote').value=i.note||'';$('#editPinned').checked=!!i.pinned;
+ const editFile=$('#editProfileImage');if(editFile){editFile.value='';delete editFile.dataset.dataUrl;}setProfilePreview($('#editProfilePreview'),i.coverUrl||'');
  const ec=$('#editCollections');[...ec.options].forEach(o=>o.selected=collections.some(c=>c.id===o.value&&(c.itemIds||[]).includes(i.id)));
  openDialog($('#itemDialog'));return}
  const del=e.target.closest('[data-delete-selected]');if(del){const group=duplicateMap()[Number(del.dataset.deleteSelected)];if(!group)return;const selected=group[1].filter(i=>$(`[data-dup-select="${CSS.escape(i.id)}"]`)?.checked);if(!selected.length)return toast('Select at least one duplicate copy.');if(selected.length>=group[1].length)return toast('Keep at least one copy in the group.');if(confirm(`Remove ${selected.length} selected record${selected.length>1?'s':''}? This only changes your local site data; the source text file remains untouched.`)){const ids=new Set(selected.map(x=>x.id));items=items.filter(i=>!ids.has(i.id));collections.forEach(c=>c.itemIds=(c.itemIds||[]).filter(id=>!ids.has(id)));save();Promise.all([...ids].map(cloudDeleteResource));renderAll();notify('Selected duplicate copies removed','warning')}return}
@@ -884,7 +913,12 @@ $('#collectionForm').addEventListener('submit',e=>{
  save();e.target.reset();closeDialogs();renderAll();notify('Collection created','success');
 });
 
-$('#itemForm').addEventListener('submit',e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;const uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';i.coverUrl=(i.type==='account'&&uploadedProfile)?uploadedProfile:$('#editCoverUrl').value.trim();i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
+$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';
+ if(i.type==='account'&&!uploadedProfile&&$('#editProfileImage')?.files?.[0]){
+   try{uploadedProfile=await readImageFile($('#editProfileImage').files[0]);}catch(err){return notify(err.message,'error','Profile image')}
+ }
+ const coverText=$('#editCoverUrl').value.trim();
+ i.coverUrl=(i.type==='account'&&uploadedProfile)?uploadedProfile:(coverText||i.coverUrl||'');i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
  const selected=new Set([...$('#editCollections').selectedOptions].map(o=>o.value));
  collections.forEach(c=>{c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id);if(selected.has(c.id))c.itemIds.push(i.id)});
  save();closeDialogs();renderAll();notify('Changes saved','success');});

@@ -262,3 +262,11 @@ Important: the 642 seeded URL records are not inserted into Supabase until an au
 - Home adds Quick Actions, Category Overview, Needs Attention, and Workspace dashboards.
 - Duplicate review adds search, responsive comparison groups and a stronger empty state; manual deletion safety remains unchanged.
 - Files: `subcategory-rules.js` and `SUBCATEGORY_AUDIT.json`.
+
+## Uploaded image fix
+- Image input changes now update the image preview before saving.
+- Editing an existing account clears stale file selections and shows its current cover.
+- Saving a new photo correctly replaces the prior cover image.
+- Uploaded photos are resized to a maximum of 1000px and JPEG compressed to reduce storage failures.
+- IndexedDB remains the full local storage source; localStorage gracefully omits embedded photos if its quota is exceeded.
+- URL-based covers are still supported.
