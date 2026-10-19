@@ -1,0 +1,29 @@
+{
+  "name": "bagpack",
+  "version": "1.0.0",
+  "description": "Bagpack — your private internet library, notes workspace, and digital identity hub.",
+  "main": "app.js",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "test": "echo \"No tests configured\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikithaKesh/bagpack.git"
+  },
+  "keywords": [
+    "library",
+    "notes",
+    "personal",
+    "archive"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nikithaKesh/bagpack/issues"
+  },
+  "homepage": "https://github.com/nikithaKesh/bagpack#readme",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
