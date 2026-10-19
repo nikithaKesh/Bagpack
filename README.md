@@ -277,3 +277,10 @@ Important: the 642 seeded URL records are not inserted into Supabase until an au
 - Hydrate from IndexedDB without copying image data back to localStorage.
 - Preserve locally uploaded pictures when pulling cloud records.
 - Avoid syncing base64 images as huge Supabase text values. Uploaded images are local to this browser until dedicated cloud storage is configured.
+
+## Image V3: universal upload correction
+- Add Link now accepts a custom cover file (the earlier versions did not support this).
+- Edit Item uploads work for **all record types**, not only Accounts.
+- Image saving waits for IndexedDB write completion, and load-hydration is guarded against early saves.
+- Service worker is version-bumped, uses network-first app files, and app/CSS URLs are cache-busted.
+- Profile/account cover photos are local to this browser; Supabase Storage is not configured.

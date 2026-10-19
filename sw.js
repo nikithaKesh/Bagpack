@@ -1,4 +1,4 @@
-const VERSION='bagpack-v9-1';
+const VERSION='bagpack-image-v3-20261019';
 const APP_CACHE=`${VERSION}-app`;
 const PREVIEW_CACHE=`${VERSION}-previews`;
 const APP_SHELL=[
@@ -18,7 +18,7 @@ self.addEventListener('fetch',event=>{
     }));return;
   }
   if(url.origin===location.origin){
-    event.respondWith(caches.match(req).then(cached=>cached||fetch(req).then(res=>{const copy=res.clone();caches.open(APP_CACHE).then(c=>c.put(req,copy));return res}).catch(()=>caches.match('./index.html'))));return;
+    event.respondWith(fetch(req).then(res=>{if(res.ok){const copy=res.clone();caches.open(APP_CACHE).then(c=>c.put(req,copy))}return res}).catch(async()=>await caches.match(req)||await caches.match('./index.html')));return;
   }
   // Pinned CDN assets become available offline after first successful load.
   if(['cdn.jsdelivr.net','cdnjs.cloudflare.com'].includes(url.hostname)){

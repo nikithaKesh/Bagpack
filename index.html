@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=image-v3">
   <script>
     (()=>{try{const t=localStorage.getItem('bagpack-theme')||'dark';document.documentElement.dataset.theme=t;}catch{document.documentElement.dataset.theme='dark';}})();
   </script>
@@ -445,6 +445,7 @@
         </label>
         <label>Tags<input id="linkTags" type="text" placeholder="design, 3d, reference"></label>
       </div>
+      <label>Custom cover image<div class="profile-upload-row"><div id="linkCoverPreview" class="profile-upload-preview"><span>Cover</span></div><div class="profile-upload-copy"><input id="linkCoverImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><small>Use your own cover instead of an external website screenshot.</small></div></div></label>
       <label>Notes<textarea id="linkNote" rows="3" placeholder="Why did you save this? Usage notes, reminders, context…"></textarea></label>
       <div class="dialog-actions"><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button id="saveLinkBtn" type="submit" class="primary" disabled>Save unique link</button></div>
     </form>
@@ -575,7 +576,7 @@
           </div>
         </label>
         <label>Cover image URL<input id="editCoverUrl" type="url" placeholder="Optional custom cover image"></label>
-        <label>Profile picture / account cover<div class="profile-upload-row compact-upload"><div id="editProfilePreview" class="profile-upload-preview"><span>Photo</span></div><div class="profile-upload-copy"><input id="editProfileImage" type="file" accept="image/*"><small>For account records, this image becomes the profile-style card cover.</small></div></div></label>
+        <label>Profile picture / account cover<div class="profile-upload-row compact-upload"><div id="editProfilePreview" class="profile-upload-preview"><span>Photo</span></div><div class="profile-upload-copy"><input id="editProfileImage" type="file" accept="image/*"><small>Upload a custom image for ANY record, including Library resources and accounts.</small></div></div></label>
       </div>
       <label>Collections<select id="editCollections" multiple size="4"></select></label>
       <label class="switch-row"><input id="editPinned" type="checkbox"> Pin to Workbench</label>
@@ -592,7 +593,7 @@
   <script src="js/security.js"></script>
   <script src="seed-data.js"></script>
   <script src="subcategory-rules.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=image-v3"></script>
   <script src="js/backup.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>

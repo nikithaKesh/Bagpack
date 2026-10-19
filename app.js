@@ -19,6 +19,8 @@ let libraryPage=1, lastLibraryPageItems=[];
 const LIBRARY_PAGE_SIZE=BAGPACK_CONFIG.PAGE_SIZE;
 let supabaseClient=null, supabaseConfig={url:BAGPACK_CONFIG.SUPABASE.url,anonKey:BAGPACK_CONFIG.SUPABASE.publishableKey};
 let bulkCandidates=[];
+let dataHydrated=false;
+let hydrationPromise=null;
 
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const notificationIcons={
@@ -51,11 +53,12 @@ function cacheLightweightState(){
    try{localStorage.setItem(key,JSON.stringify(value))}catch{}
  }
 }
-function save(){
+async function save(){
+ if(!dataHydrated && hydrationPromise)await hydrationPromise;
  cacheLightweightState();
- const writes=Promise.all([dbPut('items',items),dbPut('categories',categories),dbPut('collections',collections),dbPut('notes',notes)]);
+ await dbPut('items',items);
+ await Promise.all([dbPut('categories',categories),dbPut('collections',collections),dbPut('notes',notes)]);
  scheduleCloudSync();
- return writes;
 }
 
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -273,6 +276,7 @@ async function hydrateDatabase(){
    if(Array.isArray(dbNotes))notes=dbNotes;
    cacheLightweightState();renderAll();
  } else {await dbPut('items',items);await dbPut('categories',categories);await dbPut('collections',collections);await dbPut('notes',notes);}
+ dataHydrated=true;
  const s=$('#dbStatus');if(s)s.textContent='IndexedDB · active';
 }
 
@@ -651,9 +655,11 @@ function checkLink(url, box, saveBtn, categoryEl, titleEl){
 }
 let linkTimer;
 $('#linkUrl').addEventListener('input',e=>{clearTimeout(linkTimer);const v=e.target.value.trim();$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Checking…';$('#saveLinkBtn').disabled=true;$('#suggestionBox').classList.add('hidden');if(!v){$('#linkCheck').textContent='Paste a URL to check the library.';return}linkTimer=setTimeout(()=>checkLink(v,$('#linkCheck'),$('#saveLinkBtn'),$('#linkCategory'),$('#linkTitle')),180)});
-$('#linkForm').addEventListener('submit',e=>{e.preventDefault();const url=$('#linkUrl').value.trim();if(!/^https?:\/\//i.test(url)){notify('Use an http:// or https:// link','warning');return}if(items.some(i=>canon(i.url)===canon(url))){toast('Duplicate blocked. Review the existing entry first.');return}
- const it=normalizeItemShape({id:bagpackUid('resource'),title:$('#linkTitle').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:$('#linkNote').value.trim(),sourceLine:null,type:'resource',category:$('#linkCategory').value||suggestCategory(url),subcategory:$('#linkSubcategory').value.trim()||suggestSubcategory({category:$('#linkCategory').value,url,title:$('#linkTitle').value}),theme:$('#linkTheme').value.trim(),tags:$('#linkTags').value.split(',').map(x=>x.trim()).filter(Boolean),visibility:'private',favorite:false,pinned:false,status:($('#linkStatus')?.value||'active'),coverUrl:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});items.push(it);
- const chosenCollection=$('#linkCollection').value;if(chosenCollection){const c=collections.find(x=>x.id===chosenCollection);if(c&&!c.itemIds.includes(it.id))c.itemIds.push(it.id);}save();e.target.reset();$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Paste a URL to check the library.';$('#suggestionBox').classList.add('hidden');closeDialogs();renderAll();notify('Link added to your library','success','Saved');});
+$('#linkForm').addEventListener('submit',async e=>{e.preventDefault();const url=$('#linkUrl').value.trim();if(!/^https?:\/\//i.test(url)){notify('Use an http:// or https:// link','warning');return}if(items.some(i=>canon(i.url)===canon(url))){toast('Duplicate blocked. Review the existing entry first.');return}
+ let linkCover=$('#linkCoverImage')?.dataset.dataUrl||'';
+ if(!linkCover && $('#linkCoverImage')?.files?.[0]){try{linkCover=await readImageFile($('#linkCoverImage').files[0])}catch(err){return notify(err.message,'error','Cover image')}}
+ const it=normalizeItemShape({id:bagpackUid('resource'),title:$('#linkTitle').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:$('#linkNote').value.trim(),sourceLine:null,type:'resource',category:$('#linkCategory').value||suggestCategory(url),subcategory:$('#linkSubcategory').value.trim()||suggestSubcategory({category:$('#linkCategory').value,url,title:$('#linkTitle').value}),theme:$('#linkTheme').value.trim(),tags:$('#linkTags').value.split(',').map(x=>x.trim()).filter(Boolean),visibility:'private',favorite:false,pinned:false,status:($('#linkStatus')?.value||'active'),coverUrl:linkCover,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});items.push(it);
+ const chosenCollection=$('#linkCollection').value;if(chosenCollection){const c=collections.find(x=>x.id===chosenCollection);if(c&&!c.itemIds.includes(it.id))c.itemIds.push(it.id);}try{await save()}catch(err){items=items.filter(x=>x.id!==it.id);return notify('Could not store image: '+err.message,'error','Storage failed')} e.target.reset();delete $('#linkCoverImage').dataset.dataUrl;setProfilePreview($('#linkCoverPreview'),'');$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Paste a URL to check the library.';$('#suggestionBox').classList.add('hidden');closeDialogs();renderAll();notify('Link added to your library','success','Saved');});
 let accTimer;
 $('#accountUrl').addEventListener('input',e=>{clearTimeout(accTimer);const v=e.target.value.trim();const box=$('#accountCheck'),btn=$('#saveAccountBtn');box.className='check-box idle';box.textContent='Checking…';btn.disabled=true;if(!v){box.textContent='The profile URL will be checked against the full library.';return}accTimer=setTimeout(()=>{const ex=items.filter(i=>canon(i.url)===canon(v));if(ex.length){box.className='check-box bad';box.textContent=`Already exists as ${ex[0].type} · ${ex[0].title}.`;btn.disabled=true}else{box.className='check-box good';box.textContent=`Unique profile URL confirmed against ${items.length} records.`;btn.disabled=false}},180)});
 async function readImageFile(file){
@@ -692,6 +698,7 @@ async function updateProfileFile(inputId,previewId){
 }
 $('#accountProfileImage')?.addEventListener('change',()=>updateProfileFile('accountProfileImage','accountProfilePreview'));
 $('#editProfileImage')?.addEventListener('change',()=>updateProfileFile('editProfileImage','editProfilePreview'));
+$('#linkCoverImage')?.addEventListener('change',()=>updateProfileFile('linkCoverImage','linkCoverPreview'));
 $('#accountForm').addEventListener('submit',async e=>{
  e.preventDefault();const url=$('#accountUrl').value.trim();
  if(items.some(i=>canon(i.url)===canon(url)))return notify('This URL already exists.','warning');
@@ -918,11 +925,11 @@ $('#collectionForm').addEventListener('submit',e=>{
 });
 
 $('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';
- if(i.type==='account'&&!uploadedProfile&&$('#editProfileImage')?.files?.[0]){
+ if(!uploadedProfile&&$('#editProfileImage')?.files?.[0]){
    try{uploadedProfile=await readImageFile($('#editProfileImage').files[0]);}catch(err){return notify(err.message,'error','Profile image')}
  }
  const coverText=$('#editCoverUrl').value.trim();
- i.coverUrl=(i.type==='account'&&uploadedProfile)?uploadedProfile:(coverText||i.coverUrl||'');i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
+ i.coverUrl=uploadedProfile||coverText||i.coverUrl||'';i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
  const selected=new Set([...$('#editCollections').selectedOptions].map(o=>o.value));
  collections.forEach(c=>{c.itemIds=(c.itemIds||[]).filter(id=>id!==i.id);if(selected.has(c.id))c.itemIds.push(i.id)});
  try{await save()}catch(err){Object.assign(i,previous);return notify('Could not save image: '+err.message,'error','Storage failed')}closeDialogs();renderAll();notify('Changes saved','success');});
@@ -1214,5 +1221,5 @@ const repairedAtStartup=assignMissingCategories(items);const subcategoryRepaired
 renderAll();
 initStatusPickers();
 setupMotion();
-hydrateDatabase().catch(err=>notify('Could not load saved images: '+err.message,'error','Storage'));
+hydrationPromise=hydrateDatabase().catch(err=>{dataHydrated=true;notify('Could not load saved images: '+err.message,'error','Storage')});
 })();
