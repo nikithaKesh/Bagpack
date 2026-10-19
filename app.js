@@ -656,10 +656,10 @@ function checkLink(url, box, saveBtn, categoryEl, titleEl){
 let linkTimer;
 $('#linkUrl').addEventListener('input',e=>{clearTimeout(linkTimer);const v=e.target.value.trim();$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Checking…';$('#saveLinkBtn').disabled=true;$('#suggestionBox').classList.add('hidden');if(!v){$('#linkCheck').textContent='Paste a URL to check the library.';return}linkTimer=setTimeout(()=>checkLink(v,$('#linkCheck'),$('#saveLinkBtn'),$('#linkCategory'),$('#linkTitle')),180)});
 $('#linkForm').addEventListener('submit',async e=>{e.preventDefault();const url=$('#linkUrl').value.trim();if(!/^https?:\/\//i.test(url)){notify('Use an http:// or https:// link','warning');return}if(items.some(i=>canon(i.url)===canon(url))){toast('Duplicate blocked. Review the existing entry first.');return}
- let linkCover=$('#linkCoverImage')?.dataset.dataUrl||'';
+ let linkCover=await selectedImage('linkCoverImage');
  if(!linkCover && $('#linkCoverImage')?.files?.[0]){try{linkCover=await readImageFile($('#linkCoverImage').files[0])}catch(err){return notify(err.message,'error','Cover image')}}
  const it=normalizeItemShape({id:bagpackUid('resource'),title:$('#linkTitle').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:$('#linkNote').value.trim(),sourceLine:null,type:'resource',category:$('#linkCategory').value||suggestCategory(url),subcategory:$('#linkSubcategory').value.trim()||suggestSubcategory({category:$('#linkCategory').value,url,title:$('#linkTitle').value}),theme:$('#linkTheme').value.trim(),tags:$('#linkTags').value.split(',').map(x=>x.trim()).filter(Boolean),visibility:'private',favorite:false,pinned:false,status:($('#linkStatus')?.value||'active'),coverUrl:linkCover,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});items.push(it);
- const chosenCollection=$('#linkCollection').value;if(chosenCollection){const c=collections.find(x=>x.id===chosenCollection);if(c&&!c.itemIds.includes(it.id))c.itemIds.push(it.id);}try{await save()}catch(err){items=items.filter(x=>x.id!==it.id);return notify('Could not store image: '+err.message,'error','Storage failed')} e.target.reset();delete $('#linkCoverImage').dataset.dataUrl;setProfilePreview($('#linkCoverPreview'),'');$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Paste a URL to check the library.';$('#suggestionBox').classList.add('hidden');closeDialogs();renderAll();notify('Link added to your library','success','Saved');});
+ const chosenCollection=$('#linkCollection').value;if(chosenCollection){const c=collections.find(x=>x.id===chosenCollection);if(c&&!c.itemIds.includes(it.id))c.itemIds.push(it.id);}try{await save()}catch(err){items=items.filter(x=>x.id!==it.id);return notify('Could not store image: '+err.message,'error','Storage failed')} e.target.reset();clearSelectedImage('linkCoverImage');setProfilePreview($('#linkCoverPreview'),'');$('#linkCheck').className='check-box idle';$('#linkCheck').textContent='Paste a URL to check the library.';$('#suggestionBox').classList.add('hidden');closeDialogs();renderAll();notify('Link added to your library','success','Saved');});
 let accTimer;
 $('#accountUrl').addEventListener('input',e=>{clearTimeout(accTimer);const v=e.target.value.trim();const box=$('#accountCheck'),btn=$('#saveAccountBtn');box.className='check-box idle';box.textContent='Checking…';btn.disabled=true;if(!v){box.textContent='The profile URL will be checked against the full library.';return}accTimer=setTimeout(()=>{const ex=items.filter(i=>canon(i.url)===canon(v));if(ex.length){box.className='check-box bad';box.textContent=`Already exists as ${ex[0].type} · ${ex[0].title}.`;btn.disabled=true}else{box.className='check-box good';box.textContent=`Unique profile URL confirmed against ${items.length} records.`;btn.disabled=false}},180)});
 async function readImageFile(file){
@@ -679,22 +679,36 @@ async function readImageFile(file){
   return canvas.toDataURL('image/jpeg',0.78);
  }finally{URL.revokeObjectURL(blobUrl)}
 }
-function setProfilePreview(el,dataUrl){
+function setProfilePreview(el,url){
  if(!el)return;
- // Use a CSS custom property instead of an unsafely interpolated CSS url().
- el.style.backgroundImage=dataUrl?`url("${String(dataUrl).replace(/"/g,'%22')}")`:'';
- el.classList.toggle('has-image',!!dataUrl);
+ el.style.backgroundImage=url?`url(${JSON.stringify(url)})`:'';
+ el.classList.toggle('has-image',!!url);
+ el.setAttribute('aria-label',url?'Selected image preview':'No image selected');
 }
+const pendingImageUploads=new Map();
 async function updateProfileFile(inputId,previewId){
- const input=$('#'+inputId),preview=$('#'+previewId);if(!input)return;
+ const input=$('#'+inputId), preview=$('#'+previewId); if(!input)return;
  const file=input.files?.[0];if(!file)return;
- input.dataset.dataUrl='';
- try{
-  const result=await readImageFile(file);
-  input.dataset.dataUrl=result;
-  setProfilePreview(preview,result);
-  notify('Image ready. Save the record to apply it.','info','Profile photo');
- }catch(err){input.value='';delete input.dataset.dataUrl;notify(err.message,'error','Profile photo')}
+ const old=pendingImageUploads.get(inputId);if(old?.objectUrl)URL.revokeObjectURL(old.objectUrl);
+ const state={objectUrl:URL.createObjectURL(file),promise:null,dataUrl:'',error:null};
+ pendingImageUploads.set(inputId,state);
+ setProfilePreview(preview,state.objectUrl); // Immediate preview, even during compression.
+ state.promise=readImageFile(file).then(result=>{
+   state.dataUrl=result;
+   if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,result);URL.revokeObjectURL(state.objectUrl);state.objectUrl=null;}
+   return result;
+ }).catch(err=>{state.error=err;if(pendingImageUploads.get(inputId)===state){setProfilePreview(preview,'');input.value='';notify(err.message,'error','Image upload')}throw err});
+}
+async function selectedImage(inputId){
+ const state=pendingImageUploads.get(inputId);
+ if(!state)return '';
+ if(state.error)throw state.error;
+ return await state.promise;
+}
+function clearSelectedImage(inputId){
+ const state=pendingImageUploads.get(inputId);if(state?.objectUrl)URL.revokeObjectURL(state.objectUrl);
+ pendingImageUploads.delete(inputId);
+ const el=$('#'+inputId);if(el)el.value='';
 }
 $('#accountProfileImage')?.addEventListener('change',()=>updateProfileFile('accountProfileImage','accountProfilePreview'));
 $('#editProfileImage')?.addEventListener('change',()=>updateProfileFile('editProfileImage','editProfilePreview'));
@@ -703,10 +717,10 @@ $('#accountForm').addEventListener('submit',async e=>{
  e.preventDefault();const url=$('#accountUrl').value.trim();
  if(items.some(i=>canon(i.url)===canon(url)))return notify('This URL already exists.','warning');
  let profileImage='';
- try{profileImage=$('#accountProfileImage').dataset.dataUrl||await readImageFile($('#accountProfileImage').files?.[0]);}
+ try{profileImage=await selectedImage('accountProfileImage');}
  catch(err){return notify(err.message,'error','Profile image')}
  items.push({id:bagpackUid('account'),title:$('#accountPlatform').value.trim()||titleFrom(url),url,canonicalUrl:canon(url),domain:domain(url),note:[ $('#accountHandle').value.trim(), $('#accountRole').value, $('#accountNote').value.trim() ].filter(Boolean).join(' · '),type:'account',category:'Accounts',tags:[$('#accountRole').value],visibility:'private',favorite:false,pinned:false,status:'active',coverUrl:profileImage,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
- try{await save()}catch(err){items.pop();return notify('Image could not be stored: '+err.message,'error','Save failed')}e.target.reset();delete $('#accountProfileImage').dataset.dataUrl;setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
+ try{await save()}catch(err){items.pop();return notify('Image could not be stored: '+err.message,'error','Save failed')}e.target.reset();clearSelectedImage('accountProfileImage');setProfilePreview($('#accountProfilePreview'),'');closeDialogs();renderAll();notify('Account added successfully','success','Saved');
 });
 $('#categoryForm').addEventListener('submit',e=>{e.preventDefault();const name=$('#categoryName').value.trim();if(categories.some(c=>c.name.toLowerCase()===name.toLowerCase()))return toast('Category already exists.');categories.push({id:bagpackUid('category'),name,description:$('#categoryDescription').value.trim()});save();e.target.reset();closeDialogs();renderAll();notify('Category created','success');});
 
@@ -721,7 +735,7 @@ document.addEventListener('click',e=>{
    $('#detailEditButton').dataset.id=i.id;openDialog($('#detailsDialog'));return;
  }
  const m=e.target.closest('.manage'); if(m){const i=items.find(x=>x.id===m.dataset.id);if(!i)return;$('#editItemId').value=i.id;$('#editTitle').value=i.title||'';$('#editUrl').value=i.url||'';$('#editType').value=i.type||'resource';$('#editCategory').value=i.category||'Imported';$('#editSubcategory').value=i.subcategory||'';$('#editTheme').value=i.theme||'';$('#editStatus').value=i.status||'active';$('#editCoverUrl').value=/^https?:\/\//i.test(i.coverUrl||'')?i.coverUrl:'';$('#editTags').value=(i.tags||[]).join(', ');$('#editNote').value=i.note||'';$('#editPinned').checked=!!i.pinned;
- const editFile=$('#editProfileImage');if(editFile){editFile.value='';delete editFile.dataset.dataUrl;}setProfilePreview($('#editProfilePreview'),i.coverUrl||'');
+ const editFile=$('#editProfileImage');if(editFile)clearSelectedImage('editProfileImage');setProfilePreview($('#editProfilePreview'),i.coverUrl||'');
  const ec=$('#editCollections');[...ec.options].forEach(o=>o.selected=collections.some(c=>c.id===o.value&&(c.itemIds||[]).includes(i.id)));
  openDialog($('#itemDialog'));return}
  const del=e.target.closest('[data-delete-selected]');if(del){const group=duplicateMap()[Number(del.dataset.deleteSelected)];if(!group)return;const selected=group[1].filter(i=>$(`[data-dup-select="${CSS.escape(i.id)}"]`)?.checked);if(!selected.length)return toast('Select at least one duplicate copy.');if(selected.length>=group[1].length)return toast('Keep at least one copy in the group.');if(confirm(`Remove ${selected.length} selected record${selected.length>1?'s':''}? This only changes your local site data; the source text file remains untouched.`)){const ids=new Set(selected.map(x=>x.id));items=items.filter(i=>!ids.has(i.id));collections.forEach(c=>c.itemIds=(c.itemIds||[]).filter(id=>!ids.has(id)));save();Promise.all([...ids].map(cloudDeleteResource));renderAll();notify('Selected duplicate copies removed','warning')}return}
@@ -924,10 +938,8 @@ $('#collectionForm').addEventListener('submit',e=>{
  save();e.target.reset();closeDialogs();renderAll();notify('Collection created','success');
 });
 
-$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile=$('#editProfileImage')?.dataset.dataUrl||'';
- if(!uploadedProfile&&$('#editProfileImage')?.files?.[0]){
-   try{uploadedProfile=await readImageFile($('#editProfileImage').files[0]);}catch(err){return notify(err.message,'error','Profile image')}
- }
+$('#itemForm').addEventListener('submit',async e=>{e.preventDefault();const i=items.find(x=>x.id===$('#editItemId').value);if(!i)return;const previous={...i};const newUrl=$('#editUrl').value.trim();const collision=items.find(x=>x.id!==i.id&&canon(x.url)===canon(newUrl));if(collision)return toast('That URL would duplicate another record.');i.title=$('#editTitle').value.trim();i.url=newUrl;i.canonicalUrl=canon(newUrl);i.domain=domain(newUrl);i.type=$('#editType').value;i.category=$('#editCategory').value;i.subcategory=$('#editSubcategory').value.trim();i.theme=$('#editTheme').value.trim();i.tags=$('#editTags').value.split(',').map(x=>x.trim()).filter(Boolean);i.note=$('#editNote').value.trim();i.status=$('#editStatus').value;let uploadedProfile='';try{uploadedProfile=await selectedImage('editProfileImage')}catch(err){return notify(err.message,'error','Image error')}
+ 
  const coverText=$('#editCoverUrl').value.trim();
  i.coverUrl=uploadedProfile||coverText||i.coverUrl||'';i.pinned=$('#editPinned').checked;i.updatedAt=new Date().toISOString();
  const selected=new Set([...$('#editCollections').selectedOptions].map(o=>o.value));
@@ -1217,9 +1229,9 @@ function setupMotion(){
   }
 }
 
-const repairedAtStartup=assignMissingCategories(items);const subcategoryRepaired=fillMissingSubcategories(items);if(repairedAtStartup||subcategoryRepaired)save();
+const repairedAtStartup=assignMissingCategories(items);const subcategoryRepaired=fillMissingSubcategories(items);
 renderAll();
 initStatusPickers();
 setupMotion();
-hydrationPromise=hydrateDatabase().catch(err=>{dataHydrated=true;notify('Could not load saved images: '+err.message,'error','Storage')});
+hydrationPromise=hydrateDatabase().then(async()=>{if(repairedAtStartup||subcategoryRepaired)cacheLightweightState();}).catch(err=>{dataHydrated=true;notify('Could not load saved images: '+err.message,'error','Storage')});
 })();
