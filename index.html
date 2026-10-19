@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Bagpack</title>
+  <meta name="description" content="Bagpack — your private internet library, notes workspace, and digital identity hub.">
+  <meta name="theme-color" content="#090A0C">
+
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (()=>{try{const t=localStorage.getItem('bagpack-theme')||'dark';document.documentElement.dataset.theme=t;}catch{document.documentElement.dataset.theme='dark';}})();
+  </script>
+</head>
+<body>
+
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M8 5.5v13M12 5.5v13M16 5.5v13"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14 6.5a4.5 4.5 0 0 0 5.8 5.8L12 20.1a2.2 2.2 0 0 1-3.1-3.1l7.8-7.8A4.5 4.5 0 0 0 14 6.5Z"/></symbol>
+    <symbol id="i-collection" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M18 9a7 7 0 1 0 1 7"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="m21 3-7 7"/><path d="M3 7h3c5 0 7 10 12 10h3"/><path d="M16 16h5v5"/><path d="m21 21-4-4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.9A6 6 0 0 0 6.2 8.7 4.6 4.6 0 0 0 7 18Z"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path d="M8 6h10M8 12h7M8 18h4"/><path d="m4 4-2 2 2 2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8"/><path d="M17 13v6H5V7h6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/><path d="m14 7 3 3"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="m9 3 6 6"/><path d="m7 10 7 7"/><path d="m14 4 6 6-4 1-5 5-1 4-6-6 4-1 5-5z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 20h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 9 16H3z"/><path d="M12 9v4M12 16h.01"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-7z"/><path d="m11 14 10-11"/></symbol>
+    <symbol id="i-review" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 1 3 5.7"/><path d="M5 17v-5h5"/></symbol>
+    <symbol id="i-fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 20h14"/></symbol>
+    <symbol id="i-backup" viewBox="0 0 24 24"><path d="M4 7h16v13H4z"/><path d="M8 7V4h8v3M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v6c0 5-3.4 8.3-8 9-4.6-.7-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  </svg>
+
+  
+  <div id="appGate" class="pin-gate" role="dialog" aria-modal="true" aria-labelledby="appGateTitle">
+    <div class="pin-gate-card">
+      <div class="pin-gate-mark">B</div>
+      <p class="eyebrow">PRIVATE WORKSPACE</p>
+      <h1 id="appGateTitle">Unlock Bagpack</h1>
+      <p>Enter your 4-digit PIN to open the app.</p>
+      <form id="appPinForm" autocomplete="off">
+        <label for="appPinInput">PIN</label>
+        <input id="appPinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="appPinError">
+        <button class="primary" type="submit">Unlock</button>
+      </form>
+      <span id="appPinError" class="pin-error" role="alert"></span>
+    </div>
+  </div>
+
+  <dialog id="pinDialog" class="pin-dialog">
+    <form id="pinDialogForm" method="dialog" autocomplete="off">
+      <div class="pin-dialog-icon"><svg class="icon"><use href="#i-lock"></use></svg></div>
+      <h2 id="pinDialogTitle">Unlock</h2>
+      <p id="pinDialogCopy">Enter your PIN.</p>
+      <label for="pinDialogInput">PIN</label>
+      <input id="pinDialogInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
+      <span id="pinDialogError" class="pin-error" role="alert"></span>
+      <div class="dialog-actions">
+        <button type="button" class="secondary" id="pinDialogCancel">Cancel</button>
+        <button type="submit" class="primary">Unlock</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">BP</div>
+        <div><strong>Bagpack</strong><span>Private internet workspace</span></div>
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><svg class="icon"><use href="#i-home"></use></svg><span>Overview</span></button>
+        <button class="nav-item" data-view="library"><svg class="icon"><use href="#i-library"></use></svg><span>Library</span></button>
+        <button class="nav-item" data-view="workbench"><svg class="icon"><use href="#i-tool"></use></svg><span>Workbench</span></button>
+        <button class="nav-item" data-view="collections"><svg class="icon"><use href="#i-collection"></use></svg><span>Collections</span></button>
+        <button class="nav-item" data-view="vault"><svg class="icon"><use href="#i-lock"></use></svg><span>Private Vault</span></button>
+        <button class="nav-item" data-view="notes"><svg class="icon"><use href="#i-note"></use></svg><span>Notes</span></button>
+        <div class="nav-separator"></div>
+        <button class="nav-item" data-view="duplicates"><svg class="icon"><use href="#i-copy"></use></svg><span>Duplicates</span> <b id="dupBadge">0</b></button>
+        <button class="nav-item" data-view="accounts"><svg class="icon"><use href="#i-user"></use></svg><span>Accounts</span></button>
+        <button class="nav-item" data-view="categories"><svg class="icon"><use href="#i-grid"></use></svg><span>Categories</span></button>
+        <button class="nav-item" data-view="cloud"><svg class="icon"><use href="#i-cloud"></use></svg><span>Cloud</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="health-mini">
+          <span>Library health</span>
+          <strong id="healthScore">—</strong>
+        </div>
+        <div class="db-mini"><span class="db-dot"></span><span id="dbStatus">Local database</span></div>
+        <button id="undoResetBtn" class="text-btn hidden">Undo last reset</button>
+        <button id="resetBtn" class="text-btn">Reset local changes</button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Toggle navigation"><svg class="icon"><use href="#i-menu"></use></svg></button>
+        <div class="search-wrap">
+          <svg class="icon"><use href="#i-search"></use></svg>
+          <input id="globalSearch" type="search" placeholder="Search your internet…" autocomplete="off">
+          <kbd>Ctrl K</kbd>
+        </div>
+        <button class="primary" id="addBtn"><svg class="icon"><use href="#i-plus"></use></svg><span>Add</span></button>
+        <button class="icon-btn theme-toggle" id="themeToggleBtn" aria-label="Switch to light mode" title="Toggle theme"><svg class="icon"><use id="themeIconUse" href="#i-sun"></use></svg></button>
+      </header>
+
+      <section class="view active" id="view-overview">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">BAGPACK / PRIVATE INTERNET WORKSPACE</p>
+            <h1>Your internet, packed<br><em>into one calm system.</em></h1>
+            <p class="hero-copy">A private library for links, accounts, notes, references, active tools, and everything worth keeping.</p>
+          </div>
+          <div class="hero-system" aria-hidden="true"><div class="system-card sc-a">Library</div><div class="system-card sc-b">Notes</div><div class="system-card sc-c">Workbench</div><div class="system-line"></div></div></div>
+
+        <div class="stats">
+          <article><span>Resources</span><strong id="statResources">0</strong><small>saved entries</small></article>
+          <article><span>Accounts</span><strong id="statAccounts">0</strong><small>official profiles</small></article>
+          <article><span>Duplicate groups</span><strong id="statDupes">0</strong><small>waiting for review</small></article>
+          <article><span>Categories</span><strong id="statCategories">0</strong><small>available buckets</small></article>
+        </div>
+
+        <div class="split">
+          <section class="panel">
+            <div class="section-head"><div><p class="eyebrow">RECENT</p><h2>Latest additions</h2></div><button class="text-btn" data-jump="library">View library</button></div>
+            <div class="compact-list" id="recentList"></div>
+          </section>
+
+          <section class="panel accent-panel">
+            <div class="section-head"><div><p class="eyebrow">MAINTENANCE</p><h2>Library health</h2></div><span class="score" id="healthScoreBig">—</span></div>
+            <div id="healthChecks" class="health-checks"></div>
+            <button class="secondary wide" data-jump="duplicates">Review duplicate groups</button>
+          </section>
+        </div>
+        <div class="home-workspace">
+          <section class="panel home-panel" aria-label="Quick actions">
+            <div class="section-head"><div><p class="eyebrow">DO SOMETHING</p><h2>Quick actions</h2></div></div>
+            <div class="home-actions">
+              <button type="button" data-home-action="link"><svg class="icon"><use href="#i-plus"></use></svg><span>Save a link</span></button>
+              <button type="button" data-home-action="bulk"><svg class="icon"><use href="#i-upload"></use></svg><span>Bulk import</span></button>
+              <button type="button" data-jump="notes"><svg class="icon"><use href="#i-note"></use></svg><span>Open notes</span></button>
+              <button type="button" data-jump="duplicates"><svg class="icon"><use href="#i-copy"></use></svg><span>Review duplicates</span></button>
+            </div>
+          </section>
+          <section class="panel home-panel"><div class="section-head"><div><p class="eyebrow">ORGANIZATION</p><h2>Category overview</h2></div><button class="text-btn" data-jump="categories">All categories</button></div><div id="homeCategories" class="home-category-list"></div></section>
+          <section class="panel home-panel"><div class="section-head"><div><p class="eyebrow">LIBRARY INSIGHTS</p><h2>Needs attention</h2></div></div><div id="homeAttention" class="home-attention"></div></section>
+          <section class="panel home-panel"><div class="section-head"><div><p class="eyebrow">YOUR WORKSPACE</p><h2>Ready to use</h2></div></div><div id="homeWork" class="home-attention"></div></section>
+        </div>
+      </section>
+
+      <section class="view" id="view-library">
+        <div class="page-head compact-head">
+          <div><p class="eyebrow">ARCHIVE</p><h1>Library</h1><p>Search, sort, filter, preview, and manage every saved resource.</p></div>
+          <div class="page-head-actions">
+            <button class="secondary" id="checkLinksBtn" title="Check links on this page"><svg class="icon"><use href="#i-shield"></use></svg><span>Check links</span></button>
+            <button class="secondary" id="exportJsonBtn"><svg class="icon"><use href="#i-backup"></use></svg><span>JSON</span></button>
+            <button class="secondary" id="exportCsvBtn"><svg class="icon"><use href="#i-download"></use></svg><span>CSV</span></button>
+            <button class="secondary" id="importBackupBtn"><svg class="icon"><use href="#i-upload"></use></svg><span>Restore</span></button>
+            <input id="backupFileInput" type="file" accept=".json,application/json" hidden>
+            <button class="secondary" id="clearLibraryFilters"><svg class="icon"><use href="#i-refresh"></use></svg><span>Reset filters</span></button></div>
+        </div>
+        <div class="library-controlbar">
+          <div class="filter-search"><svg class="icon"><use href="#i-search"></use></svg><input id="librarySearch" type="search" placeholder="Search title, domain, tags, notes…"></div>
+          <select id="libraryCategory"><option value="all">All categories</option></select>
+          <select id="libraryType"><option value="all">All types</option><option value="resource">Resources</option><option value="account">Accounts</option></select>
+          <select id="libraryStatus">
+            <option value="all">All statuses</option><option value="active">Active</option><option value="pending">Pending</option>
+            <option value="in_progress">In progress</option>
+            <option value="submitted">Submitted</option>
+            <option value="in_review">In review</option>
+            <option value="success">Success</option>
+            <option value="failed">Failed</option>
+            <option value="expired">Expired</option>
+          </select>
+          <select id="libraryPinned"><option value="all">All resources</option><option value="pinned">Workbench only</option><option value="favorite">Favorites</option></select>
+          <select id="librarySort">
+            <option value="newest">Newest</option><option value="oldest">Oldest</option>
+            <option value="az">A → Z</option><option value="za">Z → A</option>
+            <option value="recent_opened">Recently opened</option><option value="most_opened">Most opened</option>
+            <option value="domain">Domain</option>
+          </select>
+        </div>
+        <div class="library-toolbar">
+          <div><strong id="libraryCount">0 items</strong><span id="libraryMeta">Filtered view</span></div>
+          <div class="segmented">
+            <button class="chip active" data-density="grid"><svg class="icon"><use href="#i-grid"></use></svg><span>Cards</span></button>
+            <button class="chip" data-density="compact"><svg class="icon"><use href="#i-library"></use></svg><span>Compact</span></button>
+          </div>
+        </div>
+        <div class="card-grid" id="libraryGrid"></div>
+        <div id="libraryPagination" class="pagination" aria-label="Library pagination"></div>
+      </section>
+
+      <section class="view" id="view-workbench">
+        <div class="page-head">
+          <div><p class="eyebrow">ACTIVE TOOLS</p><h1>Workbench</h1><p>Resources you pin because you actively use them for design, development, research, or projects.</p></div>
+        </div>
+        <div id="workbenchGrid" class="card-grid compact-workbench"></div>
+        <div id="workbenchEmpty" class="empty-state hidden"><strong>No pinned resources yet.</strong><span>Open any resource → Manage → Pin to Workbench.</span></div>
+      </section>
+
+      <section class="view" id="view-collections">
+        <div class="page-head">
+          <div><p class="eyebrow">PURPOSE-BASED GROUPS</p><h1>Collections</h1><p>Group resources by why you saved them: Portfolio Inspiration, Game Ideas, Tools to Try, and more.</p></div>
+          <button id="newCollectionBtn" class="secondary">New collection</button>
+        </div>
+        <div id="collectionGrid" class="collection-grid"></div>
+      </section>
+
+      <section class="view" id="view-vault">
+        <div class="page-head">
+          <div><p class="eyebrow">SENSITIVE AREA</p><h1>Private Vault</h1><p>Private and adult resources stay isolated from normal Discovery and cloud sync when Local-only is enabled.</p></div>
+          <div class="vault-head-actions">
+            <label class="vault-local-toggle" title="When enabled, Vault entries are not pushed to Supabase">
+              <input id="vaultLocalOnly" type="checkbox" checked>
+              <span>Local-only</span>
+            </label>
+            <button id="vaultToggleBtn" class="secondary"><svg class="icon"><use href="#i-lock"></use></svg><span>Unlock vault</span></button>
+          </div>
+        </div>
+        <div id="vaultLocked" class="vault-lock">
+          <div class="vault-mark">◇</div>
+          <strong>Vault content is hidden</strong>
+          <span>Reveal it for this browser session. Nothing is removed from your library.</span>
+        </div>
+        <div id="vaultGrid" class="card-grid hidden"></div>
+      </section>
+
+      
+      <section class="view" id="view-notes">
+        <div class="page-head compact-head">
+          <div><p class="eyebrow">WRITING SPACE</p><h1>Notes</h1><p>Write, paste, collect snippets, or bulk-import text and Markdown files.</p></div>
+          <div class="page-head-actions">
+            <button class="secondary" id="importNotesBtn"><svg class="icon"><use href="#i-upload"></use></svg><span>Import files</span></button>
+            <button class="primary" id="newNoteBtn"><svg class="icon"><use href="#i-plus"></use></svg><span>New note</span></button>
+            <input id="noteFileInput" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" multiple hidden>
+          </div>
+        </div>
+        <div class="notes-workspace">
+          <aside class="notes-list-panel">
+            <div class="notes-search"><svg class="icon"><use href="#i-search"></use></svg><input id="notesSearch" type="search" placeholder="Search notes…"></div>
+            <div class="note-color-filter" id="noteColorFilter">
+              <button class="note-filter-dot active" data-note-color="all" aria-label="All notes"></button>
+              <button class="note-filter-dot slate" data-note-color="slate" aria-label="Slate"></button>
+              <button class="note-filter-dot blue" data-note-color="blue" aria-label="Blue"></button>
+              <button class="note-filter-dot violet" data-note-color="violet" aria-label="Violet"></button>
+              <button class="note-filter-dot amber" data-note-color="amber" aria-label="Amber"></button>
+              <button class="note-filter-dot green" data-note-color="green" aria-label="Green"></button>
+              <button class="note-filter-dot rose" data-note-color="rose" aria-label="Rose"></button>
+            </div>
+            <div id="notesList" class="notes-list"></div>
+          </aside>
+          <section class="note-editor-panel">
+            <div id="noteEmpty" class="empty-state"><strong>Select a note</strong><span>Or create a new note to start writing.</span></div>
+            <div id="noteEditor" class="note-editor hidden">
+              <div class="note-editor-top">
+                <input id="noteTitle" class="note-title-input" placeholder="Untitled note">
+                <div class="note-editor-actions">
+                  <select id="noteColor"><option value="slate">Slate</option><option value="blue">Blue</option><option value="violet">Violet</option><option value="amber">Amber</option><option value="green">Green</option><option value="rose">Rose</option></select>
+                  <button id="pinNoteBtn" class="icon-btn" title="Pin note"><svg class="icon"><use href="#i-pin"></use></svg></button>
+                  <button id="deleteNoteBtn" class="icon-btn danger-ghost" title="Delete note"><svg class="icon"><use href="#i-close"></use></svg></button>
+                </div>
+              </div>
+              <div class="note-writing-shell">
+                <div class="note-format-toolbar" id="noteToolbar" aria-label="Note formatting toolbar">
+                  <button type="button" data-note-format="h1" title="Heading 1">H1</button>
+                  <button type="button" data-note-format="h2" title="Heading 2">H2</button>
+                  <button type="button" data-note-format="bold" title="Bold"><strong>B</strong></button>
+                  <button type="button" data-note-format="italic" title="Italic"><em>I</em></button>
+                  <span class="toolbar-separator"></span>
+                  <button type="button" data-note-format="bullet" title="Bullet list">• List</button>
+                  <button type="button" data-note-format="check" title="Checklist">☐</button>
+                  <button type="button" data-note-format="quote" title="Quote">“ ”</button>
+                  <button type="button" data-note-format="code" title="Code">&lt;/&gt;</button>
+                  <button type="button" data-note-format="link" title="Link">Link</button>
+                  <span class="toolbar-separator"></span>
+                  <button type="button" id="noteUndoBtn" title="Undo">Undo</button>
+                  <button type="button" id="noteRedoBtn" title="Redo">Redo</button>
+                  <button type="button" id="notePreviewBtn" title="Toggle preview">Preview</button>
+                </div>
+                <div class="note-writing-area">
+                  <textarea id="noteContent" class="note-content" placeholder="Start writing here…"></textarea>
+                  <div id="notePreviewPane" class="note-preview-pane hidden"></div>
+                </div>
+              </div>
+              <div class="note-footer">
+                <div class="note-save-meta"><span id="noteSavedState">Saved locally</span><span id="noteWordCount">0 words</span><span id="noteCharCount">0 chars</span></div>
+                <div class="note-footer-actions"><span class="note-shortcut-hint">Ctrl/Cmd + S save · Ctrl/Cmd + Enter preview</span><input id="noteTags" placeholder="tags, comma separated"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-duplicates">
+        <div class="page-head dup-page-head"><div><p class="eyebrow">LIBRARY MAINTENANCE</p><h1>Duplicate review</h1><p>Compare matching URLs and decide what stays. No automatic deletion.</p></div>
+          <button id="scanDuplicatesBtn" class="primary"><svg class="icon"><use href="#i-refresh"></use></svg> Rescan library</button></div>
+        <div class="dup-summary" aria-label="Duplicate review overview">
+          <div class="dup-summary-card"><span>Matching groups</span><strong id="dupGroupCount">0</strong><small>Canonical URL matches</small></div>
+          <div class="dup-summary-card"><span>Records in groups</span><strong id="dupCopyCount">0</strong><small>Including originals</small></div>
+          <div class="dup-summary-card"><span>Extra copies</span><strong id="dupExtraCount">0</strong><small>For manual review only</small></div>
+        </div>
+        <div class="dup-review-toolbar"><div><h2>Review queue</h2><p>Tracking parameters, www, protocol, and trailing slashes are normalized. Different pages remain distinct.</p></div>
+          <button id="autoCategorizeBtn" class="secondary"><svg class="icon"><use href="#i-grid"></use></svg> Suggest missing categories</button></div>
+        <div class="dup-view-controls"><label class="dup-filter"><svg class="icon"><use href="#i-search"></use></svg><input id="dupSearch" type="search" placeholder="Find a duplicate group by title or URL" aria-label="Search duplicate groups"></label><span id="dupVisibleCount" class="dup-visible-count"></span></div>
+        <div id="duplicateGroups" class="duplicate-groups" aria-live="polite"></div>
+      </section>
+
+      <section class="view" id="view-accounts">
+        <div class="page-head">
+          <div><p class="eyebrow">IDENTITY</p><h1>Official accounts</h1><p>Your own profiles are first-class records, separate from ordinary bookmarks.</p></div>
+          <button class="secondary" id="addAccountBtn">Add account</button>
+        </div>
+        <div class="account-grid" id="accountGrid"></div>
+      </section>
+
+      <section class="view" id="view-categories">
+        <div class="page-head">
+          <div><p class="eyebrow">STRUCTURE</p><h1>Categories</h1><p>Create broad categories; use tags and collections for finer organization.</p></div>
+          <button class="secondary" id="addCategoryBtn">New category</button>
+        </div>
+        <div id="categoryGrid" class="category-grid"></div>
+      </section>
+
+      <section class="view" id="view-cloud">
+        <div class="page-head">
+          <div><p class="eyebrow">CLOUD DATABASE</p><h1>Supabase</h1><p>Your archive database is preconfigured and protected with authenticated Row Level Security.</p></div>
+          <span id="cloudBadge" class="cloud-badge offline">Not signed in</span>
+        </div>
+        <div class="cloud-layout">
+          <section class="panel">
+            <div class="section-head"><div><p class="eyebrow">DATABASE</p><h2>Connected backend</h2></div></div>
+            <div class="cloud-form">
+              <label>Project URL<input id="supabaseUrl" type="url" value="https://scsfdktyemkosnhtwbqp.supabase.co" readonly></label>
+              <label>Publishable key<textarea id="supabaseAnonKey" rows="2" readonly>sb_publishable_KRl-tvP0lNstq0Rw5n6Fqw_36dwwBaC</textarea></label>
+              <div id="supabaseStatus" class="check-box idle">Database configured. Sign in to access your private rows.</div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head"><div><p class="eyebrow">OWNER ACCESS</p><h2>Sign in</h2></div></div>
+            <div class="cloud-form">
+              <label>Email<input id="authEmail" type="email" placeholder="you@example.com"></label>
+              <label>Password<input id="authPassword" type="password" placeholder="Minimum 6 characters"></label>
+              <div class="dialog-actions">
+                <button id="signInBtn" type="button" class="primary">Sign in</button>
+                <button id="signUpBtn" type="button" class="secondary">Create account</button>
+                <button id="signOutBtn" type="button" class="secondary hidden">Sign out</button>
+              </div>
+              <div id="authStatus" class="check-box idle">Not signed in.</div>
+            </div>
+          </section>
+
+          <section class="panel cloud-wide">
+            <div class="section-head"><div><p class="eyebrow">SYNC</p><h2>Archive data</h2></div></div>
+            <p class="cloud-copy">Your existing 642-link seed remains local until you sign in and push it. After that, changes sync to Supabase and IndexedDB remains the offline fallback.</p>
+            <div class="cloud-actions">
+              <button id="pushSupabaseBtn" class="secondary" disabled>Push local → Supabase</button>
+              <button id="pullSupabaseBtn" class="secondary" disabled>Pull Supabase → local</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  
+  <dialog id="previewDialog" class="preview-dialog">
+    <div class="preview-dialog-head">
+      <div><strong id="previewTitle">Preview</strong><small id="previewDomain"></small></div>
+      <div class="preview-dialog-actions"><a id="previewExternal" class="secondary" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="#i-external"></use></svg><span>Open site</span></a><button type="button" class="icon-btn close-dialog"><svg class="icon"><use href="#i-close"></use></svg></button></div>
+    </div>
+    <div class="preview-browser"><div class="browser-bar"><span></span><span></span><span></span><div id="previewUrl"></div></div><iframe id="previewFrame" title="Website preview" loading="lazy" sandbox="allow-scripts allow-forms allow-popups allow-same-origin"></iframe></div>
+    <p class="preview-hint">Some websites block embedded previews. If that happens, use Open site.</p>
+  </dialog>
+
+  <dialog id="addMenu" class="menu-dialog">
+    <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">QUICK CREATE</span><strong>Add to Bagpack</strong></div><button type="button" class="icon-btn close-dialog" aria-label="Close"><svg class="icon"><use href="#i-close"></use></svg></button></div>
+    <button data-add="link"><span><svg class="icon"><use href="#i-plus"></use></svg></span><div><strong>Add link</strong><small>Check for duplicates before saving</small></div><svg class="icon menu-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button>
+    <button data-add="account"><span><svg class="icon"><use href="#i-user"></use></svg></span><div><strong>Add account</strong><small>Add one of your official profiles</small></div><svg class="icon menu-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button>
+    <button data-add="category"><span><svg class="icon"><use href="#i-grid"></use></svg></span><div><strong>New category</strong><small>Create a new organization bucket</small></div><svg class="icon menu-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button>
+    <button data-add="bulk"><span><svg class="icon"><use href="#i-upload"></use></svg></span><div><strong>Bulk import</strong><small>CSV or Excel with automatic duplicate + category checks</small></div><svg class="icon menu-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button>
+  </dialog>
+
+  <dialog id="linkDialog" class="form-dialog">
+    <form id="linkForm" method="dialog">
+      <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">NEW RESOURCE</span><strong>Add link</strong></div><button type="button" class="icon-btn close-dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+      <label>URL<input id="linkUrl" type="url" required placeholder="https://example.com"></label>
+      <div id="linkCheck" class="check-box idle">Paste a URL to check the library.</div>
+      <div class="form-grid">
+        <label>Title<input id="linkTitle" type="text" placeholder="Auto-filled from the domain"></label>
+        <label>Category<select id="linkCategory"></select></label>
+      </div>
+      <div class="form-grid">
+        <label>Subcategory<input id="linkSubcategory" type="text" placeholder="Frontend, Fonts, Streaming…"></label>
+        <label>Theme<input id="linkTheme" type="text" placeholder="3D, Minimal, Anime, Research…"></label>
+      </div>
+      <label>Collection<select id="linkCollection"><option value="">None</option></select></label>
+      <div id="suggestionBox" class="suggestion hidden"></div>
+      <div class="form-grid">
+        <label>Status
+          <div class="status-picker" data-status-picker="linkStatus">
+            <button type="button" class="status-picker-trigger" data-status-trigger="linkStatus"></button>
+            <div class="status-picker-menu hidden" data-status-menu="linkStatus"></div>
+            <select id="linkStatus" class="status-native hidden" aria-hidden="true">
+              <option value="active" selected>Active</option><option value="pending">Pending</option><option value="in_progress">In progress</option><option value="submitted">Submitted</option><option value="in_review">In review</option><option value="success">Success</option><option value="failed">Failed</option><option value="expired">Expired</option>
+            </select>
+          </div>
+        </label>
+        <label>Tags<input id="linkTags" type="text" placeholder="design, 3d, reference"></label>
+      </div>
+      <label>Notes<textarea id="linkNote" rows="3" placeholder="Why did you save this? Usage notes, reminders, context…"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button id="saveLinkBtn" type="submit" class="primary" disabled>Save unique link</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog" class="form-dialog">
+    <form id="accountForm" method="dialog">
+      <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">IDENTITY</span><strong>Add account</strong></div><button type="button" class="icon-btn close-dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+      <div class="form-grid">
+        <label>Platform<input id="accountPlatform" type="text" required placeholder="GitHub"></label>
+        <label>Username / handle<input id="accountHandle" type="text" placeholder="@username"></label>
+      </div>
+      <label>Profile URL<input id="accountUrl" type="url" required placeholder="https://…"></label>
+      <label>Profile picture<div class="profile-upload-row"><div id="accountProfilePreview" class="profile-upload-preview"><span>Photo</span></div><div class="profile-upload-copy"><input id="accountProfileImage" type="file" accept="image/*"><small>Upload an image to use as the account card cover.</small></div></div></label>
+      <div id="accountCheck" class="check-box idle">The profile URL will be checked against the full library.</div>
+      <label>Account role<select id="accountRole"><option>Professional</option><option>Developer</option><option>Design</option><option>Creator</option><option>Personal</option><option>Learning</option><option>Community</option><option>Support</option></select></label><label>Notes<textarea id="accountNote" rows="3" placeholder="What is this account for? Add reminders, profile purpose, content focus…"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button id="saveAccountBtn" type="submit" class="primary" disabled>Add account</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="categoryDialog" class="form-dialog small-dialog">
+    <form id="categoryForm" method="dialog">
+      <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">ORGANIZE</span><strong>New category</strong></div><button type="button" class="icon-btn close-dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+      <label>Name<input id="categoryName" type="text" required placeholder="Design resources"></label>
+      <div id="categoryCheck" class="check-box idle">Similar categories will be shown before creation.</div>
+      <label>Description<textarea id="categoryDescription" rows="3" placeholder="What belongs here?"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button id="saveCategoryBtn" type="submit" class="primary">Create category</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="bulkDialog" class="form-dialog bulk-dialog">
+    <form id="bulkForm" method="dialog">
+      <div class="dialog-title">
+        <div><span class="eyebrow">IMPORT</span><strong>Bulk add links</strong></div>
+        <button type="button" class="icon-btn close-dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+
+      <div class="bulk-tabs">
+        <button type="button" class="chip active" data-bulk-tab="file">CSV / Excel</button>
+        <button type="button" class="chip" data-bulk-tab="paste">Paste links</button>
+      </div>
+
+      <div id="bulkFilePane">
+        <label>Choose file
+          <input id="bulkFile" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+        </label>
+        <div class="notice compact-notice">
+          Recommended columns: <strong>URL</strong>, Title, Category, Tags, Notes, Type. Only URL is required.
+          CSV works locally. XLS/XLSX uses the pinned SheetJS parser loaded by Bagpack.
+        </div>
+      </div>
+
+      <div id="bulkPastePane" class="hidden">
+        <label>Paste links
+          <textarea id="bulkPaste" rows="8" placeholder="One URL per line, or: URL | Title | Category | Notes"></textarea>
+        </label>
+      </div>
+
+      <div class="bulk-options">
+        <label class="switch-row"><input id="bulkAutoCategory" type="checkbox" checked> Automatically categorize blank categories</label>
+        <label class="switch-row"><input id="bulkSkipDuplicates" type="checkbox" checked> Skip duplicates when importing</label>
+      </div>
+
+      <div id="bulkStatus" class="check-box idle">Choose a file or paste links to preview the import.</div>
+
+      <div id="bulkPreview" class="hidden">
+        <div class="import-stats">
+          <article><span>Total</span><strong id="bulkTotal">0</strong></article>
+          <article><span>Ready</span><strong id="bulkReady">0</strong></article>
+          <article><span>Existing duplicates</span><strong id="bulkExistingDup">0</strong></article>
+          <article><span>Import duplicates</span><strong id="bulkInternalDup">0</strong></article>
+        </div>
+        <div class="bulk-table-wrap">
+          <table class="bulk-table">
+            <thead><tr><th>Status</th><th>Title / URL</th><th>Category</th><th>Notes</th></tr></thead>
+            <tbody id="bulkPreviewRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <span class="spacer"></span>
+        <button type="button" id="analyzeBulkBtn" class="secondary">Analyze import</button>
+        <button type="submit" id="saveBulkBtn" class="primary" disabled>Import ready links</button>
+      </div>
+    </form>
+  </dialog>
+
+    <dialog id="collectionDialog" class="form-dialog small-dialog">
+    <form id="collectionForm" method="dialog">
+      <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">COLLECTION</span><strong>Create collection</strong></div><button type="button" class="icon-btn close-dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+      <label>Name<input id="collectionName" type="text" required placeholder="Portfolio Inspiration"></label>
+      <label>Description<textarea id="collectionDescription" rows="3" placeholder="What belongs in this collection?"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button type="submit" class="primary">Create collection</button></div>
+    </form>
+  </dialog>
+
+<dialog id="detailsDialog" class="form-dialog record-details-dialog" aria-labelledby="detailHeading">
+  <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">RECORD DETAILS</span><strong id="detailHeading">Information</strong></div><button type="button" class="icon-btn close-dialog" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+  <div id="recordDetailsBody" class="record-details-body"></div>
+  <div class="dialog-actions"><button type="button" class="icon-btn close-dialog detail-footer-close" title="Close details" aria-label="Close details"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button><span class="spacer"></span><button type="button" id="detailEditButton" class="primary">Edit record</button></div>
+</dialog>
+
+  <dialog id="itemDialog" class="form-dialog">
+    <form id="itemForm" method="dialog">
+      <input type="hidden" id="editItemId">
+      <div class="dialog-title"><div class="dialog-title-copy"><span class="eyebrow">MANAGE RECORD</span><strong>Edit item</strong></div><button type="button" class="icon-btn close-dialog" aria-label="Close dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+      <label>Title<input id="editTitle" type="text" required></label>
+      <label>URL<input id="editUrl" type="url" required></label>
+      <div class="form-grid">
+        <label>Type<select id="editType"><option value="resource">Resource</option><option value="account">Account</option></select></label>
+        <label>Category<select id="editCategory"></select></label>
+      </div>
+      <div class="form-grid">
+        <label>Subcategory<input id="editSubcategory" type="text"></label>
+        <label>Theme<input id="editTheme" type="text"></label>
+      </div>
+      <label>Tags<input id="editTags" type="text" placeholder="comma, separated"></label>
+      <div class="form-grid">
+        <label>Status
+          <div class="status-picker" data-status-picker="editStatus">
+            <button type="button" class="status-picker-trigger" data-status-trigger="editStatus"></button>
+            <div class="status-picker-menu hidden" data-status-menu="editStatus"></div>
+            <select id="editStatus" class="status-native hidden" aria-hidden="true">
+              <option value="active">Active</option><option value="pending">Pending</option><option value="in_progress">In progress</option><option value="submitted">Submitted</option><option value="in_review">In review</option><option value="success">Success</option><option value="failed">Failed</option><option value="expired">Expired</option>
+            </select>
+          </div>
+        </label>
+        <label>Cover image URL<input id="editCoverUrl" type="url" placeholder="Optional custom cover image"></label>
+        <label>Profile picture / account cover<div class="profile-upload-row compact-upload"><div id="editProfilePreview" class="profile-upload-preview"><span>Photo</span></div><div class="profile-upload-copy"><input id="editProfileImage" type="file" accept="image/*"><small>For account records, this image becomes the profile-style card cover.</small></div></div></label>
+      </div>
+      <label>Collections<select id="editCollections" multiple size="4"></select></label>
+      <label class="switch-row"><input id="editPinned" type="checkbox"> Pin to Workbench</label>
+      <label>Notes<textarea id="editNote" rows="3"></textarea></label>
+      <div class="dialog-actions"><button type="button" id="deleteItemBtn" class="danger">Delete…</button><span class="spacer"></span><button type="button" class="secondary close-dialog icon-cancel" aria-label="Cancel and close"><svg class="icon"><use href="#i-close"></use></svg></button><button type="submit" class="primary">Save changes</button></div>
+    </form>
+  </dialog>
+  <div id="notificationCenter" class="notification-center" aria-live="polite" aria-atomic="false"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" crossorigin="anonymous"></script>
+  <script src="js/config.js"></script>
+  <script src="js/security.js"></script>
+  <script src="seed-data.js"></script>
+  <script src="subcategory-rules.js"></script>
+  <script src="app.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/pwa.js"></script>
+</body>
+</html>

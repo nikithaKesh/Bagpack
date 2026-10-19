@@ -1,0 +1,109 @@
+{
+  "seed_records": 642,
+  "subcategory_coverage": 642,
+  "unique_subcategories": 63,
+  "most_common_subcategories": [
+    [
+      "Motion & Interaction",
+      85
+    ],
+    [
+      "Programming Tools",
+      84
+    ],
+    [
+      "Lifestyle & Inspiration",
+      59
+    ],
+    [
+      "AI Directories & Discovery",
+      39
+    ],
+    [
+      "Browser Games",
+      28
+    ],
+    [
+      "Learning Resources",
+      24
+    ],
+    [
+      "Game Discovery",
+      19
+    ],
+    [
+      "Entertainment Resources",
+      18
+    ],
+    [
+      "Frameworks & Libraries",
+      16
+    ],
+    [
+      "Other Private Resources",
+      16
+    ],
+    [
+      "Icons & Illustrations",
+      15
+    ],
+    [
+      "Fashion & Apparel",
+      14
+    ],
+    [
+      "Media Resources",
+      12
+    ],
+    [
+      "Professional References",
+      12
+    ],
+    [
+      "Fonts & Typography",
+      11
+    ],
+    [
+      "AI Models & Chat",
+      10
+    ],
+    [
+      "Prototyping & Design Tools",
+      9
+    ],
+    [
+      "UI Inspiration",
+      9
+    ],
+    [
+      "Private AI & Chat",
+      9
+    ],
+    [
+      "Social Profiles",
+      9
+    ],
+    [
+      "Productivity Tools",
+      8
+    ],
+    [
+      "Code Hosting & Collaboration",
+      8
+    ],
+    [
+      "Color & Palettes",
+      8
+    ],
+    [
+      "Documentation & Tutorials",
+      7
+    ],
+    [
+      "Courses & Certifications",
+      7
+    ]
+  ],
+  "manual_review_subcategories": 2,
+  "duplicates_deleted": 0
+}

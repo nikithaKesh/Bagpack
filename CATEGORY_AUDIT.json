@@ -1,0 +1,26 @@
+{
+  "total": 642,
+  "active": 642,
+  "accounts": 23,
+  "category_counts": {
+    "AI & Automation": 57,
+    "Productivity": 11,
+    "Design & UI/UX": 137,
+    "Development": 128,
+    "Work & Freelance": 9,
+    "Education & Learning": 33,
+    "Short Links & Review": 2,
+    "Assets & Media": 19,
+    "Business & References": 12,
+    "Games & Interactive": 48,
+    "Private Vault": 29,
+    "Research & Reading": 8,
+    "Entertainment & Streaming": 29,
+    "Utilities & Downloads": 4,
+    "Social Platforms": 10,
+    "Shopping & Lifestyle": 83,
+    "Accounts": 23
+  },
+  "fixed_seed": [],
+  "policy": "Keep ambiguous sites in Short Links & Review; preserve duplicate records and Private Vault assignments."
+}
